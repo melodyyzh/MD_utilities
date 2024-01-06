@@ -1,0 +1,77 @@
+################################################################################################################
+# Template input file to run umbrella sampling
+# run 200000 steps
+# read from restart file 
+# deleted velocity line 
+reset_timestep 0
+# reset timestep to 0 befre running the simulation 
+################################################################################################################
+
+################################################################################################################
+# VARIABLES   
+################################################################################################################
+clear
+variable rcut      equal 17.5     #est. 3.5*diameter  
+variable epsilon   equal 0.8126   #unit conversion 
+variable sigma     equal 4.7  
+variable shift     equal 23.5     #center particle radius 
+variable bondKeq   equal 2.9876
+variable bondReq1  equal 23.5
+variable bondReq2  equal 4.7
+variable dt        equal 4.0 
+variable startTemp equal 275.0 
+variable stopTemp  equal 275.0 
+variable Tdamp     equal 100.0 
+variable springKeq equal 35.0
+variable springX   equal 115.0
+variable springY   equal 0.0
+variable springZ   equal 0.0
+variable springReq equal 0.0
+
+################################################################################################################
+# SETUP
+################################################################################################################
+units		real
+atom_style	molecular
+atom_modify     sort 0 0.0       #print out in frames in order  
+
+#read_data       data.twoParticles
+#velocity        all create ${startTemp} 4834834 rot yes mom yes dist gaussian        #turn off rotation and momentum of the particles
+
+read_restart    generic.restart
+
+pair_style	lj/expand ${rcut}     
+pair_coeff      1 1 0 0 0   
+pair_coeff      1 2 ${epsilon} ${sigma} ${shift}
+pair_coeff      2 2 ${epsilon} ${sigma} 0 
+special_bonds   lj 0.0 1.0 1.0   #turn off LJ interaction for directly bonded atoms (1-2) 
+
+bond_style      harmonic
+bond_coeff      1 ${bondKeq} ${bondReq1} 
+bond_coeff      2 ${bondKeq} ${bondReq2}
+
+neighbor	2.0 bin            #consider cutoff +2 as neighbor
+neigh_modify	every 1 delay 0 check yes     #every x step//no delay//check the neighbor list to see if need to update  
+
+restart         10 nvt.a.restart nvt.b.restart  #print restart every 10 ?steps? 
+
+reset_timestep 0
+timestep	${dt}   
+
+################################################################################################################
+# SIMULATION
+################################################################################################################
+group           centroid1 id 1           # define group names
+group           centroid2 id 6002
+
+fix		1 all nvt temp ${startTemp} ${stopTemp} ${Tdamp}            #last number is how aggressive we want to derive the T back 
+fix             2 centroid1 spring couple centroid2 ${springKeq} ${springX} ${springY} ${springZ} ${springReq}       #create a string between 2 particles - Keq/x/y/z/req 
+
+thermo_style    custom step time ke pe temp press etotal f_1 f_2 
+thermo          100                  #give an output every x step 
+
+dump            1 all custom 100 twoParticles.lammpstrj id type element xu yu zu fx fy fz    #print every x step 
+dump_modify     1 element A B     #give element names 
+
+run		200000
+
