@@ -9,7 +9,3 @@ Targeting simulation in LAMMPS at this stage
 
 ## Build & Execute
 Refer to the `umbrella.cmd` file for information about the required modules
-
-## Credit
-- This project was developed as part of the ChE696: Simulation of Condensed Matter System
-- Initial code templates were provided by our instructor, Dr. Rebecca Lindsey
